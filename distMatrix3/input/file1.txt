@@ -1,0 +1,3 @@
+good day {hadoop, ]good bye hadoop
+see    [you]    <hadoop@
+university?
