@@ -13,13 +13,24 @@ public class RowDistReducer extends Reducer<Text, Text, Text, Text> {
 	private ArrayList<String> vals;
 	private ArrayList<DocWords> docWordsList;
 	private Set<String> uniqueWords;
+	private String metric;
+	private int divisor;
+
+	public void setup(Context context) throws IOException, InterruptedException {
+		super.setup(context);
+		metric = context.getConfiguration().get("metric");
+		if (metric == null) {
+			metric = "manhattan";
+		}
+		divisor = context.getConfiguration().getInt("divisor", 100);
+	}
 
 	public void reduce(Text key, Iterable<Text> lines, Context context)
 			throws IOException, InterruptedException {
 
 		prepareLists(key, lines);
 		String ob1 = "", ob2 = "";
-		int dist;
+		int dist = -1;
 		// write output
 		// for (int i = 0; i < docWordsList.size(); i++) {
 		// ob1 = docWordsList.get(i).getDocName();
@@ -43,8 +54,16 @@ public class RowDistReducer extends Reducer<Text, Text, Text, Text> {
 		for (int i = 0; i < docWordsList.size(); i++) {
 			if (i != keypos) {
 				ob2 = docWordsList.get(i).getDocName();
-				dist = calcDist(docWordsList.get(i), docWordsList.get(keypos));
-
+				if (metric.equals("manhattan")) {
+					dist = calcManh(docWordsList.get(i),
+							docWordsList.get(keypos));
+				} else if (metric.equals("cosine")) {
+					dist = calcCos(docWordsList.get(i),
+							docWordsList.get(keypos));
+				} else if (metric.equals("euclidean")) {
+					dist = calcCos(docWordsList.get(i),
+							docWordsList.get(keypos));
+				}
 				context.write(key, new Text("" + ob2 + ":" + dist));
 				// context.write(key, new Text("" + ob1 + ":" + dist));
 			}
@@ -81,7 +100,7 @@ public class RowDistReducer extends Reducer<Text, Text, Text, Text> {
 		}
 	}
 
-	private int calcDist(DocWords docWords, DocWords docWords2) {
+	public int calcManh(DocWords docWords, DocWords docWords2) {
 
 		int dist = 0;
 		for (String string : uniqueWords) {
@@ -90,5 +109,38 @@ public class RowDistReducer extends Reducer<Text, Text, Text, Text> {
 		}
 
 		return dist;
+	}
+
+	public void setUniqueWords(Set<String> uniqueWords) {
+		this.uniqueWords = uniqueWords;
+	}
+
+	public int calcCos(DocWords v1, DocWords v2) {
+
+		double scal = 0;
+		double v1b = 0, v2b = 0;
+		double wv1 = 0, wv2 = 0;
+		for (String word : uniqueWords) {
+			wv1 = v1.getWordCount(word);
+			wv2 = v2.getWordCount(word);
+			scal += wv1 * wv2;
+			v1b += wv1 * wv1;
+			v2b += wv2 * wv2;
+		}
+		v1b = Math.sqrt(v1b);
+		v2b = Math.sqrt(v2b);
+		int ret = (int) Math.round((1 - scal / (v1b * v2b)) * divisor);
+		if (ret == 0)
+			ret = 1;
+		return ret;
+
+	}
+
+	public void setDivisor(int divisor) {
+		this.divisor = divisor;
+	}
+
+	public void setMetric(String metric) {
+		this.metric = metric;
 	}
 }

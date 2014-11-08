@@ -140,6 +140,7 @@ public class DistMatrixDriver extends Configured implements Tool {
 
 		conf.setInt("divisor", conf.getInt("divisor", 100));
 		conf.setInt("minoccurence", conf.getInt("minoccurence", 2));
+		conf.set("metric", conf.get("metric", "cosine"));
 
 		if (steps[0]) {
 			initWorkingDirectory(conf);
@@ -187,7 +188,7 @@ public class DistMatrixDriver extends Configured implements Tool {
 			throw ex;
 		}
 		conf.set("dictionary", conf.get("workdir") + "/dictionary");
-
+		conf.set("clusters", conf.get("workdir") + "/clusters");
 		conf.set(workdir + "/wordcountOutput", "wordcntOutput");
 		conf.set(workdir + "/rowdistmxOutput", "rowdistmxOutput");
 
@@ -221,13 +222,14 @@ public class DistMatrixDriver extends Configured implements Tool {
 		System.out.println("params ");
 		System.out.println("forbwords        : " + conf.get("forbwords"));
 		System.out.println("regexform        : " + conf.get("regexform"));
+		System.out.println("metric           : " + conf.get("metric"));
 		System.out.println("input            : " + conf.get("input"));
 		System.out.println("dictionary       : " + conf.get("dictionary"));
 		System.out.println("wordcntOutput    : " + conf.get("wordcntOutput"));
 		System.out.println("rowdistmxOutput  : " + conf.get("rowdistmxOutput"));
 
 		System.out.println("output           : " + conf.get("output"));
-
+		System.out.println("clusters         : " + conf.get("clusters"));
 		System.out.println("divisor          : " + conf.get("divisor"));
 		System.out.println("minoccurence     : " + conf.get("minoccurence"));
 
@@ -245,6 +247,12 @@ public class DistMatrixDriver extends Configured implements Tool {
 		DistributedCache.addCacheFile(new URI(dictionary), conf2);
 		DistributedCache.addCacheFile(new URI(dictionary), conf3);
 
+		ArrayList<String> clusters = new ArrayList<String>();
+		for (int i = 0; i < list.size(); i++) {
+			clusters.add("" + i);
+		}
+		String clustersPath = conf.get("clusters");
+		reader.writeFile(new Path(clustersPath), conf, clusters);
 	}
 
 	private void createJobs() throws IOException {

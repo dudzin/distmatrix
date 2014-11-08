@@ -6,7 +6,9 @@ import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import org.apache.hadoop.filecache.DistributedCache;
 import org.apache.hadoop.io.IntWritable;
@@ -20,6 +22,7 @@ import org.junit.Test;
 
 import pl.pw.elka.commons.HDFSFileReader;
 import pl.pw.elka.distmatrix.DistMatrixReducer;
+import pl.pw.elka.distmatrix.DocWords;
 import pl.pw.elka.distmatrix.ForbWords;
 import pl.pw.elka.distmatrix.PorterStemmer;
 import pl.pw.elka.distmatrix.RowDistMapper;
@@ -60,6 +63,7 @@ public class DistMatrixTest {
 		rowMapperDriver.setMapper(rowMapper);
 
 		RowDistReducer rowReducer = new RowDistReducer();
+
 		rowReduceDriver = new ReduceDriver<Text, Text, Text, Text>();
 		rowReduceDriver.setReducer(rowReducer);
 
@@ -306,4 +310,47 @@ public class DistMatrixTest {
 		ArrayList<String> list = reader.readFilesInDir("dictionary");
 		assertEquals(list.size(), 1);
 	}
+
+	@Test
+	public void cosineTest() {
+		double degrees = 45.0;
+		double radians = Math.toRadians(degrees);
+
+		DocWords v1 = new DocWords("file1:[AA:1,BB:4,CC:8]");
+		DocWords v2 = new DocWords("file2:[AA:4,BB:2]");
+
+		System.out.format("The value of pi is %.4f%n", Math.PI);
+		System.out.format("The cosine of %.1f degrees is %.4f%n", degrees,
+				Math.cos(radians));
+
+		System.out.println(Math.cos(0));
+		System.out.println(Math.cos(Math.PI / 2));
+		System.out.println(v1);
+		System.out.println(v2);
+		RowDistReducer r = new RowDistReducer();
+		r.setDivisor(100);
+		Set<String> uniqueWords = new HashSet<String>();
+		uniqueWords.add("AA");
+		uniqueWords.add("BB");
+		uniqueWords.add("CC");
+		r.setUniqueWords(uniqueWords);
+
+		int dist = r.calcManh(v1, v2);
+		System.out.println(dist);
+
+		double d = r.calcCos(v1, v2);
+		System.out.println(d);
+
+		v1 = new DocWords("file1:[AA:4,BB:2]");
+		v2 = new DocWords("file2:[AA:4,BB:2]");
+		d = r.calcCos(v1, v2);
+		System.out.println(Math.round(d * 100));
+		assertEquals(1, Math.round(d));
+		v1 = new DocWords("file1:[AA:4,BB:2]");
+		v2 = new DocWords("file2:[CC:4]");
+		d = r.calcCos(v1, v2);
+		System.out.println(Math.round(d * 100));
+		assertEquals(100, Math.round(d));
+	}
+
 }

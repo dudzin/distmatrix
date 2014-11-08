@@ -61,10 +61,20 @@ public class DistMatrixReducer extends Reducer<Text, Text, Text, Text> {
 		}
 
 		output = output.substring(0, output.length() - 1);
-		context.write(key, new Text(output));
+		context.write(new Text("" + getPos(key.toString())), new Text(output));
 		// for (String d : dict) {
 		// context.write(key, new Text(d));
 		// }
+
+	}
+
+	private int getPos(String name) {
+		for (int i = 0; i < dict.size(); i++) {
+			if (dict.get(i).equals(name)) {
+				return i;
+			}
+		}
+		return -1;
 
 	}
 }
